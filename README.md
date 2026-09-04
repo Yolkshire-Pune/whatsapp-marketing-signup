@@ -84,44 +84,76 @@ Built with **Google Apps Script Web App** and **Google Sheets** as the database.
 
 ---
 
-## 🏷️ Source Tracking & QR Code Campaigns
+## 🏷️ Branch & Source Tracking (QR Codes)
 
-To track where customers sign up from, simply append ?source= to the Web App URL when generating QR codes:
+To track both the **Branch** and the **Location / Medium**, append `?branch=` and `?source=` to your Web App URL when printing QR codes:
 
-| Campaign / Location | URL Parameter Example |
+| Location / Branch | URL Parameter Example |
 |---|---|
-| Poster at entrance / wall | https://YOUR-APP-URL/exec?source=QR%20Poster |
-| Table tent on dining tables | https://YOUR-APP-URL/exec?source=Table%20Tent |
-| On printed menu | https://YOUR-APP-URL/exec?source=Menu |
-| Printed on the paper bill | https://YOUR-APP-URL/exec?source=Bill |
-| Takeaway box / packaging | https://YOUR-APP-URL/exec?source=Packaging |
-| Instagram bio link | https://YOUR-APP-URL/exec?source=Instagram |
+| Kothrud — Table Tent | `https://YOUR-APP-URL/exec?branch=Kothrud&source=Table%20Tent` |
+| Kothrud — Poster | `https://YOUR-APP-URL/exec?branch=Kothrud&source=QR%20Poster` |
+| Aundh — Printed Menu | `https://YOUR-APP-URL/exec?branch=Aundh&source=Menu` |
+| Viman Nagar — Paper Bill | `https://YOUR-APP-URL/exec?branch=Viman%20Nagar&source=Bill` |
+| FC Road — Packaging / Box | `https://YOUR-APP-URL/exec?branch=FC%20Road&source=Packaging` |
+| Baner / Wakad / Other | `https://YOUR-APP-URL/exec?branch=Baner&source=Table%20Tent` |
 
-### Generating the QR Code:
-Use any free or commercial QR code generator (e.g., [qr-code-generator.com](https://www.qr-code-generator.com/) or Canva) and paste your tagged URL.
+*(If a customer scans without a `?branch=` parameter, they can choose their branch from the dropdown on the form).*
 
 ---
 
 ## 📥 Exporting WABA-Ready CSV
 
 1. Open your Web App admin page:
-   https://YOUR-APP-URL/exec?page=admin
-2. Enter your ADMIN_TOKEN passphrase.
+   `https://YOUR-APP-URL/exec?page=admin`
+2. Enter your secret `ADMIN_TOKEN`.
 3. Click the **Download WABA CSV** button.
-4. The downloaded CSV contains:
-   `csv
-   name,phone
-   "Rahul Sharma",919876543210
-   "Priya Mehta",919812345678
-   `
-   - Only contacts who explicitly marked **Consent = Yes** are exported.
-   - Phone numbers are formatted cleanly as international numbers (91XXXXXXXXXX) without spaces, symbols, or leading zeros.
+4. The downloaded CSV follows the exact platform specification:
+   ```csv
+   Phone,Given Name,Family Name,Branch
+   919876543210,"Rahul","Sharma","Kothrud"
+   919812345678,"Priya","Mehta","Aundh"
+   ```
+   - **Phone**: Formatted in international digits (`91XXXXXXXXXX`) without spaces, symbols, or leading zeros.
+   - **Order / Deduplication**: Guaranteed unique phone numbers. If duplicate sign-ups occur, the first occurrence is preserved.
+   - **Custom Variables**: Includes `Given Name`, `Family Name`, and `Branch` ready for personalized WhatsApp broadcast campaigns.
+
+---
+
+## 📊 Central Yolkshire BI Dashboard API
+
+You can pull real-time sign-up and branch performance directly into your central Yolkshire BI dashboard using the JSON API endpoint:
+
+- **Endpoint**:
+  `https://YOUR-APP-URL/exec?page=api&token=YOUR_ADMIN_TOKEN&range=last7days`
+- **Supported Ranges**: `today`, `last7days`, `last30days`, `thismonth`, `all`
+- **Sample JSON Response**:
+  ```json
+  {
+    "success": true,
+    "brand": "Yolkshire",
+    "metric": "whatsapp_marketing_optins",
+    "timeRange": "last7days",
+    "generatedAt": "2026-09-04 23:00:00",
+    "totalOptIns": 142,
+    "totalAllTime": 560,
+    "branchBreakdown": {
+      "Kothrud": 54,
+      "Aundh": 38,
+      "Viman Nagar": 26,
+      "FC Road": 24
+    },
+    "dailyTrend": {
+      "2026-08-29": 18,
+      "2026-08-30": 24
+    }
+  }
+  ```
 
 ---
 
 ## 🔒 Security & Privacy Notes
 
-- Customer data is stored privately in your Google Sheet.
-- Phone numbers shown on the admin preview screen are masked (9198****3210) for casual view safety.
-- The admin dashboard and direct CSV endpoint are protected by the ADMIN_TOKEN.
-- Submissions require un-checked explicit marketing consent before submission.
+- Customer data is stored privately in your Google Sheet under `vaishali@yolkshire.com`.
+- Phone numbers shown on the admin preview screen are masked (`9198****3210`) for safety.
+- The admin dashboard, direct CSV endpoint, and BI API are protected by your private `ADMIN_TOKEN` configured in Script Properties.
+- Customers must explicitly check the un-checked marketing consent box before submitting.
