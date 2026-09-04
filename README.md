@@ -91,13 +91,15 @@ To track both the **Branch** and the **Location / Medium**, append `?branch=` an
 | Location / Branch | URL Parameter Example |
 |---|---|
 | Kothrud — Table Tent | `https://YOUR-APP-URL/exec?branch=Kothrud&source=Table%20Tent` |
-| Kothrud — Poster | `https://YOUR-APP-URL/exec?branch=Kothrud&source=QR%20Poster` |
-| Aundh — Printed Menu | `https://YOUR-APP-URL/exec?branch=Aundh&source=Menu` |
-| Viman Nagar — Paper Bill | `https://YOUR-APP-URL/exec?branch=Viman%20Nagar&source=Bill` |
-| FC Road — Packaging / Box | `https://YOUR-APP-URL/exec?branch=FC%20Road&source=Packaging` |
-| Baner / Wakad / Other | `https://YOUR-APP-URL/exec?branch=Baner&source=Table%20Tent` |
+| Aundh — Menu | `https://YOUR-APP-URL/exec?branch=Aundh&source=Menu` |
+| Salunkhe Vihar — Poster | `https://YOUR-APP-URL/exec?branch=Salunkhe%20Vihar&source=QR%20Poster` |
+| Wadgaon Sheri — Bill | `https://YOUR-APP-URL/exec?branch=Wadgaon%20Sheri&source=Bill` |
+| Pimple Saudagar — Packaging | `https://YOUR-APP-URL/exec?branch=Pimple%20Saudagar&source=Packaging` |
+| PYC — Table Tent | `https://YOUR-APP-URL/exec?branch=PYC&source=Table%20Tent` |
+| Wakad — Poster | `https://YOUR-APP-URL/exec?branch=Wakad&source=QR%20Poster` |
+| Bavdhan — Bill | `https://YOUR-APP-URL/exec?branch=Bavdhan&source=Bill` |
 
-*(If a customer scans without a `?branch=` parameter, they can choose their branch from the dropdown on the form).*
+*(If a customer scans without a `?branch=` parameter, they can choose from the 8 official branches in the dropdown on the form).*
 
 ---
 
