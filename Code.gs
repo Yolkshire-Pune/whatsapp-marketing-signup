@@ -40,9 +40,9 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile("index");
     template.source = source;
     template.branch = branch;
-    template.pageTitle = "Stay in the Yolkshire Loop!";
+    template.pageTitle = "Yolkshire Eggsclusive | What’s Cooking? You’ll Know First!";
     return template.evaluate()
-      .setTitle("Stay in the Yolkshire Loop! | WhatsApp Sign-up")
+      .setTitle("Yolkshire Eggsclusive | What’s Cooking? You’ll Know First!")
       .addMetaTag("viewport", "width=device-width, initial-scale=1, maximum-scale=1")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 

@@ -129,7 +129,7 @@ async function handleSubmit(request, env) {
 
   // Validation
   if (!givenName) {
-    return jsonResponse({ success: false, error: 'Please enter your given name.' }, 400);
+    return jsonResponse({ success: false, error: 'Please enter your first name.' }, 400);
   }
   if (!rawPhone) {
     return jsonResponse({ success: false, error: 'Please enter a valid WhatsApp number.' }, 400);
