@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Yolkshire WhatsApp Marketing Sign-up
  * Google Apps Script Backend (Code.gs)
  */
@@ -275,7 +275,7 @@ function handleCsvExport(e) {
         // Enforce deduplication so first occurrence is imported
         if (!seenPhones[phone]) {
           seenPhones[phone] = true;
-          csvContent += ${phone},"","",""\r\n;
+          csvContent += '"' + phone + '","' + givenName + '","' + familyName + '","' + branch + '"\r\n';
         }
       }
     }
