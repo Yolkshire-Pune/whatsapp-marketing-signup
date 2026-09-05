@@ -1,0 +1,13 @@
+name = "yolkshire-wa-signup"
+main = "src/worker.js"
+compatibility_date = "2024-09-02"
+
+# Static assets: index.html served at /, admin.html at /admin
+[assets]
+directory = "./public"
+
+# Cloudflare D1 database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "yolkshire-signups"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

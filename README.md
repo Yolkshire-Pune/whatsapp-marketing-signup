@@ -2,160 +2,129 @@
 
 A mobile-first, branded web app for Yolkshire to collect opt-in sign-ups for WhatsApp broadcasts via QR codes on posters, table tents, bills, packaging, and menus.
 
-Built with **Google Apps Script Web App** and **Google Sheets** as the database.
+Powered by **Cloudflare Workers** + **Cloudflare D1 (Serverless SQLite)** with automated GitHub Actions CI/CD.
 
 ---
 
-## 📁 Project Files
+## 📁 Project Architecture
 
-- **Code.gs**: Google Apps Script backend code handling:
-  - Routing (/ for customer sign-up, ?page=admin for admin dashboard, ?page=export for CSV export)
-  - Validation & phone number normalisation (+91 India default, e.g., 919876543210)
-  - Duplicate contact detection (updates existing row instead of making duplicates)
-  - Google Sheets read/write operations
-  - Protected WABA-ready CSV download
-- **index.html**: Customer-facing mobile-first sign-up page:
-  - Warm Yolkshire branding (egg-yolk yellow accents, cream background, dark brown typography)
-  - Form fields: Name, WhatsApp number (+91), explicit un-checked consent checkbox
-  - Clean validation without browser-default error popups
-  - Celebratory confirmation screen (*"You're in! 🥚"*)
-  - Dynamic QR source tracking (e.g. ?source=QR%20Poster)
-- **dmin.html**: Passphrase-protected admin dashboard:
-  - Total opt-in stats and daily sign-up counter
-  - Real-time search and filter table of recent contacts
-  - One-click WABA CSV download
-- **README.md**: This guide.
+- **`src/worker.js`**: Cloudflare Worker backend:
+  - Serves static assets (`/` for customer sign-up, `/admin` for dashboard)
+  - `POST /submit`: Validates phone, deduplicates via D1 upsert, saves records
+  - `GET /api/stats`: Protected JSON BI API with date ranges (`today`, `last7days`, `last30days`, `thismonth`, `all`)
+  - `GET /export`: Protected WABA-ready CSV download (`Phone,Given Name,Family Name,Branch`)
+  - Full CORS support
+- **`schema.sql`**: Cloudflare D1 SQL schema with phone uniqueness constraint & indexing
+- **`public/index.html`**: Branded customer signup form (Poppins font, Yolkshire palette, auto `+91` prefix, branch select)
+- **`public/admin.html`**: Authenticated dashboard with branch statistics, filters, search, and CSV export
+- **`.github/workflows/deploy.yml`**: Auto-deploys to Cloudflare Workers on `git push origin main`
+- **`wrangler.toml`**: Cloudflare Worker & D1 binding configuration
 
 ---
 
 ## 🚀 Setup & Deployment Guide
 
-### Step 1: Create the Google Sheet
-1. Go to [Google Sheets](https://sheets.new) and create a new spreadsheet.
-2. Name it: **Yolkshire WhatsApp Opt-ins**.
-3. Rename the first tab/sheet at the bottom to: **WhatsApp Opt-ins**.
-4. (Optional) In row 1, add these headers:
-   Timestamp | Name | Phone | Consent | Source | Status
-   *(If you leave it blank, the script will automatically create these headers on first run).*
-5. Copy the **Spreadsheet ID** from your browser's address bar:
-   https://docs.google.com/spreadsheets/d/**<SPREADSHEET_ID>**/edit
+### 1. Cloudflare Account & D1 Setup
+1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com).
+2. Install dependencies locally (optional if deploying via GitHub):
+   ```bash
+   npm install
+   ```
+3. Create your D1 Database:
+   ```bash
+   npx wrangler d1 create yolkshire-signups
+   ```
+4. Copy the output `database_id` into your **`wrangler.toml`**:
+   ```toml
+   [[d1_databases]]
+   binding = "DB"
+   database_name = "yolkshire-signups"
+   database_id = "<YOUR_DATABASE_ID>"
+   ```
+5. Apply the database schema:
+   ```bash
+   npx wrangler d1 execute yolkshire-signups --remote --file=./schema.sql
+   ```
 
----
+### 2. Configure Secrets (Admin Security)
+Set your private dashboard passphrase securely:
+```bash
+npx wrangler secret put ADMIN_TOKEN
+```
+*(Enter your desired passphrase when prompted. This is never stored in git or exposed to anyone).*
 
-### Step 2: Create the Apps Script Project
-1. In Google Sheets, click **Extensions** > **Apps Script** (or open [script.google.com](https://script.google.com) and create a new project).
-2. Name the project: **Yolkshire WhatsApp Sign-up**.
-3. In the left panel, replace the contents of Code.gs with the code from **[Code.gs](./Code.gs)**.
-4. Click the **+** icon next to *Files* > Select **HTML**:
-   - File name: index (Google will make it index.html).
-   - Paste the contents from **[index.html](./index.html)**.
-5. Click the **+** icon next to *Files* > Select **HTML**:
-   - File name: dmin (Google will make it dmin.html).
-   - Paste the contents from **[dmin.html](./admin.html)**.
-6. Click the Save icon 💾.
+### 3. Setup GitHub Actions Auto-Deploy
+In your GitHub repository (`Yolkshire-Pune/whatsapp-marketing-signup`):
+1. Go to **Settings** > **Secrets and variables** > **Actions**.
+2. Add the following Repository Secrets:
+   - `CLOUDFLARE_API_TOKEN`: Cloudflare API token with `Workers:Edit` and `D1:Edit` permissions.
+   - `CLOUDFLARE_ACCOUNT_ID`: Found on your Cloudflare dashboard sidebar.
+3. Push to `main` — GitHub Actions will auto-build and deploy your site!
 
----
-
-### Step 3: Configure Script Properties (Database & Security)
-> **Privacy Note:** Do not hardcode your passphrase or share it. You set it exclusively inside your own private Google Apps Script settings where no one else (and no AI assistant) has access to it.
-
-1. In the Apps Script editor (logged in as **`vaishali@yolkshire.com`**), click **Project Settings** (gear icon on the left menu).
-2. Scroll down to **Script Properties** and click **Add script property**:
-   - Property: `SHEET_ID`
-   - Value: `<Your Google Spreadsheet ID from Step 1>`
-3. Click **Add script property** again:
-   - Property: `ADMIN_TOKEN`
-   - Value: `<Set any private passphrase of your choice>`
-4. Click **Save script properties**.
-
----
-
-### Step 4: Deploy as a Web App
-1. Make sure you are logged into Google as **`vaishali@yolkshire.com`**.
-2. Click **Deploy** (top right blue button) > **New deployment**.
-3. Click the gear icon next to *Select type* > choose **Web app**.
-4. Configure the deployment:
-   - **Description**: `Yolkshire WhatsApp Sign-up v1`
-   - **Execute as**: `Me (vaishali@yolkshire.com)`
-   - **Who has access**: `Anyone` *(Crucial: customers need to access the signup form without having a Google account)*
-5. Click **Deploy**.
-6. Grant permissions when prompted by Google (click *Advanced* > *Go to Yolkshire WhatsApp Sign-up (unsafe)* > *Allow*).
-7. Copy the **Web App URL** provided (ends in `/exec`).
+### 4. Custom Domain (e.g. `signup.yolkshire.com`)
+1. In Cloudflare Dashboard, go to **Workers & Pages** > select `yolkshire-wa-signup`.
+2. Click **Settings** > **Domains & Routes** > **Add** > **Custom Domain**.
+3. Enter `signup.yolkshire.com` (or `wa.yolkshire.com`).
+4. Cloudflare automatically issues and manages the SSL certificate.
 
 ---
 
 ## 🏷️ Branch & Source Tracking (QR Codes)
 
-To track both the **Branch** and the **Location / Medium**, append `?branch=` and `?source=` to your Web App URL when printing QR codes:
+Append `?branch=` and `?source=` to your domain for tracking:
 
-| Location / Branch | URL Parameter Example |
+| Location / Branch | QR Code Destination URL Example |
 |---|---|
-| Kothrud — Table Tent | `https://YOUR-APP-URL/exec?branch=Kothrud&source=Table%20Tent` |
-| Aundh — Menu | `https://YOUR-APP-URL/exec?branch=Aundh&source=Menu` |
-| Salunkhe Vihar — Poster | `https://YOUR-APP-URL/exec?branch=Salunkhe%20Vihar&source=QR%20Poster` |
-| Wadgaon Sheri — Bill | `https://YOUR-APP-URL/exec?branch=Wadgaon%20Sheri&source=Bill` |
-| Pimple Saudagar — Packaging | `https://YOUR-APP-URL/exec?branch=Pimple%20Saudagar&source=Packaging` |
-| PYC — Table Tent | `https://YOUR-APP-URL/exec?branch=PYC&source=Table%20Tent` |
-| Wakad — Poster | `https://YOUR-APP-URL/exec?branch=Wakad&source=QR%20Poster` |
-| Bavdhan — Bill | `https://YOUR-APP-URL/exec?branch=Bavdhan&source=Bill` |
-
-*(If a customer scans without a `?branch=` parameter, they can choose from the 8 official branches in the dropdown on the form).*
+| Kothrud — Table Tent | `https://signup.yolkshire.com/?branch=Kothrud&source=Table%20Tent` |
+| Aundh — Menu | `https://signup.yolkshire.com/?branch=Aundh&source=Menu` |
+| Salunkhe Vihar — Poster | `https://signup.yolkshire.com/?branch=Salunkhe%20Vihar&source=QR%20Poster` |
+| Wadgaon Sheri — Bill | `https://signup.yolkshire.com/?branch=Wadgaon%20Sheri&source=Bill` |
+| Pimple Saudagar — Packaging | `https://signup.yolkshire.com/?branch=Pimple%20Saudagar&source=Packaging` |
+| PYC — Table Tent | `https://signup.yolkshire.com/?branch=PYC&source=Table%20Tent` |
+| Wakad — Poster | `https://signup.yolkshire.com/?branch=Wakad&source=QR%20Poster` |
+| Bavdhan — Bill | `https://signup.yolkshire.com/?branch=Bavdhan&source=Bill` |
 
 ---
 
 ## 📥 Exporting WABA-Ready CSV
 
-1. Open your Web App admin page:
-   `https://YOUR-APP-URL/exec?page=admin`
-2. Enter your secret `ADMIN_TOKEN`.
-3. Click the **Download WABA CSV** button.
-4. The downloaded CSV follows the exact platform specification:
+1. Open `https://signup.yolkshire.com/admin` (or `https://<worker>.workers.dev/admin`).
+2. Enter your `ADMIN_TOKEN` passphrase.
+3. Click **Download WABA CSV** (or access `/export?token=YOUR_TOKEN`).
+4. CSV Output format:
    ```csv
    Phone,Given Name,Family Name,Branch
-   919876543210,"Rahul","Sharma","Kothrud"
-   919812345678,"Priya","Mehta","Aundh"
+   "919876543210","Rahul","Sharma","Kothrud"
+   "919812345678","Priya","Mehta","Aundh"
    ```
-   - **Phone**: Formatted in international digits (`91XXXXXXXXXX`) without spaces, symbols, or leading zeros.
-   - **Order / Deduplication**: Guaranteed unique phone numbers. If duplicate sign-ups occur, the first occurrence is preserved.
-   - **Custom Variables**: Includes `Given Name`, `Family Name`, and `Branch` ready for personalized WhatsApp broadcast campaigns.
 
 ---
 
 ## 📊 Central Yolkshire BI Dashboard API
 
-You can pull real-time sign-up and branch performance directly into your central Yolkshire BI dashboard using the JSON API endpoint:
+Pull live sign-up data into your central reporting tools:
 
-- **Endpoint**:
-  `https://YOUR-APP-URL/exec?page=api&token=YOUR_ADMIN_TOKEN&range=last7days`
+- **Endpoint**: `https://signup.yolkshire.com/api/stats?token=YOUR_TOKEN&range=last7days`
 - **Supported Ranges**: `today`, `last7days`, `last30days`, `thismonth`, `all`
-- **Sample JSON Response**:
+- **Sample JSON**:
   ```json
   {
     "success": true,
     "brand": "Yolkshire",
     "metric": "whatsapp_marketing_optins",
     "timeRange": "last7days",
-    "generatedAt": "2026-09-04 23:00:00",
+    "generatedAt": "2026-09-05T15:00:00",
     "totalOptIns": 142,
     "totalAllTime": 560,
     "branchBreakdown": {
       "Kothrud": 54,
       "Aundh": 38,
-      "Viman Nagar": 26,
-      "FC Road": 24
+      "Salunkhe Vihar": 26,
+      "Bavdhan": 24
     },
     "dailyTrend": {
-      "2026-08-29": 18,
-      "2026-08-30": 24
+      "2026-09-01": 18,
+      "2026-09-02": 24
     }
   }
   ```
-
----
-
-## 🔒 Security & Privacy Notes
-
-- Customer data is stored privately in your Google Sheet under `vaishali@yolkshire.com`.
-- Phone numbers shown on the admin preview screen are masked (`9198****3210`) for safety.
-- The admin dashboard, direct CSV endpoint, and BI API are protected by your private `ADMIN_TOKEN` configured in Script Properties.
-- Customers must explicitly check the un-checked marketing consent box before submitting.

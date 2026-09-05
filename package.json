@@ -1,0 +1,15 @@
+{
+  "name": "yolkshire-wa-signup",
+  "version": "1.0.0",
+  "description": "Yolkshire WhatsApp marketing opt-in — Cloudflare Workers + D1",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute yolkshire-signups --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute yolkshire-signups --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}
