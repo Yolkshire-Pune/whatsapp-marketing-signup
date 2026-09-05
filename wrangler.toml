@@ -1,4 +1,4 @@
-name = "yolkshire-wa-signup"
+name = "whatsapp-marketing-signup"
 main = "src/worker.js"
 compatibility_date = "2024-09-02"
 
@@ -10,4 +10,4 @@ directory = "./public"
 [[d1_databases]]
 binding = "DB"
 database_name = "yolkshire-signups"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "3ec253e1-59e1-476a-988c-23aa16e69d65"
