@@ -26,7 +26,7 @@ export default {
 
     // 1. Redirect from old workers.dev domain to custom domains
     if (host === 'whatsapp.yolkshire.workers.dev' || (host.includes('whatsapp') && host.endsWith('.workers.dev'))) {
-      if (pathname === '/admin' || pathname === '/admin.html') {
+      if (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin.html' || pathname.startsWith('/admin/')) {
         return Response.redirect(`https://admin.insider.yolkshire.com/${url.search}`, 301);
       }
       return Response.redirect(`https://insider.yolkshire.com${url.pathname}${url.search}`, 301);
@@ -44,7 +44,7 @@ export default {
     );
 
     // If customer visits /admin on customer-facing insider.yolkshire.com, redirect to admin.insider.yolkshire.com
-    if (!isAdminHost && (pathname === '/admin' || pathname === '/admin.html') && host.includes('yolkshire.com')) {
+    if (!isAdminHost && (pathname === '/admin' || pathname === '/admin/' || pathname === '/admin.html' || pathname.startsWith('/admin/')) && host.includes('yolkshire.com')) {
       return Response.redirect(`https://admin.insider.yolkshire.com/${url.search}`, 302);
     }
 
