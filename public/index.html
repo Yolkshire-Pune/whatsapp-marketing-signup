@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yolkshire Eggsclusive | What’s Cooking? You’ll Know First!</title>
+  <meta name="description" content="Sign up for Yolkshire Eggsclusive WhatsApp updates. Get festive offers, seasonal specials, and event invites at your branch.">
+  <meta property="og:title" content="Yolkshire Eggsclusive | What’s Cooking? You’ll Know First!">
+  <meta property="og:description" content="Sign up for WhatsApp updates on seasonal specials, festive offers, and event invites at Yolkshire.">
+  <meta property="og:type" content="website">
   
   <!-- Fonts: Poppins (Primary Brand Font) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -601,6 +605,7 @@
         <div class="form-group">
           <label class="form-label" for="branchSelect">Your Eggular Branch</label>
           <select id="branchSelect" class="form-select">
+            <option value="" disabled selected>Select your Eggular Branch</option>
             <option value="Kothrud">Kothrud</option>
             <option value="Aundh">Aundh</option>
             <option value="Salunkhe Vihar">Salunkhe Vihar</option>
@@ -610,6 +615,7 @@
             <option value="Wakad">Wakad</option>
             <option value="Bavdhan">Bavdhan</option>
           </select>
+          <div id="branchError" class="field-error">Please select your branch.</div>
         </div>
 
         <!-- Consent Checkbox -->
@@ -659,7 +665,7 @@
         <div style="margin-bottom: 22px;">
           <span class="stamp-pill">Made with Love • Served All Day</span>
         </div>
-        <a href="http://yolkshire.com/wp-content/uploads/2026/09/A1-Print-Yolkshire-Standee-Menu.pdf" target="_blank" rel="noopener" class="btn-secondary">View Yolkshire Menu &rarr;</a>
+        <a href="https://yolkshire.com/wp-content/uploads/2026/09/A1-Print-Yolkshire-Standee-Menu.pdf" target="_blank" rel="noopener noreferrer" class="btn-secondary">View Yolkshire Menu &rarr;</a>
       </div>
 
     </main>
@@ -677,10 +683,13 @@
       const phoneInput = document.getElementById('phoneInput');
       const branchSelect = document.getElementById('branchSelect');
       const urlParams = new URLSearchParams(window.location.search);
-      const branchUrlParam = (urlParams.get('branch') || document.getElementById('branchUrlParam').value || '').trim();
+      const branchParamEl = document.getElementById('branchUrlParam');
+      const branchUrlParam = (urlParams.get('branch') || (branchParamEl ? branchParamEl.value : '') || '').trim();
       const consentCheckbox = document.getElementById('consentCheckbox');
       const sourceField = document.getElementById('sourceField');
-      sourceField.value = (urlParams.get('source') || 'QR Poster').trim();
+      if (sourceField) {
+        sourceField.value = (urlParams.get('source') || 'QR Poster').trim();
+      }
       const submitBtn = document.getElementById('submitBtn');
       const btnText = document.getElementById('btnText');
       const spinner = document.getElementById('spinner');
@@ -689,6 +698,7 @@
 
       const givenNameError = document.getElementById('givenNameError');
       const phoneError = document.getElementById('phoneError');
+      const branchError = document.getElementById('branchError');
       const consentError = document.getElementById('consentError');
 
       // Pre-select branch if passed in URL (e.g. ?branch=Kothrud)
@@ -721,16 +731,22 @@
         hideError(givenNameError);
       });
 
+      branchSelect.addEventListener('change', function() {
+        hideError(branchError);
+      });
+
       consentCheckbox.addEventListener('change', function() {
         hideError(consentError);
       });
 
       function showError(el, msg) {
+        if (!el) return;
         if (msg) el.textContent = msg;
         el.style.display = 'block';
       }
 
       function hideError(el) {
+        if (!el) return;
         el.style.display = 'none';
       }
 
@@ -777,6 +793,11 @@
           hasError = true;
         }
 
+        if (!branchVal) {
+          showError(branchError, 'Please select your branch.');
+          hasError = true;
+        }
+
         if (!consentVal) {
           showError(consentError, "Please confirm that you'd like to receive WhatsApp updates.");
           hasError = true;
@@ -789,10 +810,10 @@
         const payload = {
           givenName: givenNameVal,
           familyName: familyNameVal,
-          phone: phoneVal,
+          phone: phoneVal.replace(/\D/g, ''),
           branch: branchVal,
           consent: consentVal,
-          source: sourceField.value || 'QR Poster'
+          source: (sourceField ? sourceField.value : '') || 'QR Poster'
         };
 
         fetch('/submit', {

@@ -15,7 +15,7 @@
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export default {
@@ -63,22 +63,42 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-function verifyToken(token, env) {
+function verifyToken(tokenOrRequest, env) {
   const configured = env.ADMIN_TOKEN;
-  if (!configured || !token) return false;
+  if (!configured) return false;
+
+  let token = '';
+  if (typeof tokenOrRequest === 'string') {
+    token = tokenOrRequest;
+  } else if (tokenOrRequest && typeof tokenOrRequest.headers?.get === 'function') {
+    const authHeader = tokenOrRequest.headers.get('Authorization') || '';
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7).trim();
+    } else {
+      const url = new URL(tokenOrRequest.url);
+      token = url.searchParams.get('token') || '';
+    }
+  }
+
+  if (!token) return false;
   return token.trim() === configured.trim();
 }
 
 /**
  * Normalise Indian mobile numbers to 91XXXXXXXXXX (12 digits, no + or spaces)
+ * Strict validation: mobile number part must be 10 digits starting with 6, 7, 8, or 9
  */
 function normalisePhone(raw) {
   if (!raw) return '';
   let d = String(raw).replace(/\D/g, '');
-  if (d.startsWith('0091')) d = d.slice(2);
-  if (d.length === 11 && d.startsWith('0')) d = d.slice(1);
-  if (d.length === 10) d = '91' + d;
-  return d;
+  if (d.startsWith('0091')) d = d.slice(4);
+  else if (d.startsWith('91') && d.length === 12) d = d.slice(2);
+  else if (d.startsWith('0') && d.length === 11) d = d.slice(1);
+
+  if (d.length === 10 && /^[6-9]\d{9}$/.test(d)) {
+    return '91' + d;
+  }
+  return '';
 }
 
 /**
@@ -89,21 +109,26 @@ function nowIST() {
 }
 
 /**
- * Returns an ISO string for the cutoff date of the given range filter
+ * Returns an ISO string for the cutoff date of the given range filter in Asia/Kolkata
  * Returns null for 'all' (no cutoff)
  */
 function getCutoffISO(range) {
   const now = new Date();
   if (range === 'today') {
-    const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const startOfDay = new Date(ist.getFullYear(), ist.getMonth(), ist.getDate());
-    return startOfDay.toISOString().slice(0, 10) + 'T00:00:00';
+    const todayIST = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' });
+    return todayIST + 'T00:00:00';
   }
-  if (range === 'last7days') return new Date(now.getTime() - 7 * 86400000).toISOString().slice(0, 19);
-  if (range === 'last30days') return new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 19);
+  if (range === 'last7days') {
+    const d = new Date(now.getTime() - 7 * 86400000);
+    return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' }) + 'T00:00:00';
+  }
+  if (range === 'last30days') {
+    const d = new Date(now.getTime() - 30 * 86400000);
+    return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' }) + 'T00:00:00';
+  }
   if (range === 'thismonth') {
-    const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    return `${ist.getFullYear()}-${String(ist.getMonth() + 1).padStart(2, '0')}-01T00:00:00`;
+    const todayIST = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Kolkata' });
+    return todayIST.slice(0, 7) + '-01T00:00:00';
   }
   return null;
 }
@@ -120,11 +145,11 @@ async function handleSubmit(request, env) {
     return jsonResponse({ success: false, error: 'Invalid request body.' }, 400);
   }
 
-  const givenName  = (payload.givenName  || '').trim();
-  const familyName = (payload.familyName || '').trim();
+  const givenName  = (payload.givenName  || '').trim().slice(0, 60);
+  const familyName = (payload.familyName || '').trim().slice(0, 60);
   const rawPhone   = (payload.phone      || '').trim();
-  const branch     = (payload.branch     || 'General').trim();
-  const source     = (payload.source     || 'QR Poster').trim();
+  const branch     = (payload.branch     || 'General').trim().slice(0, 50);
+  const source     = (payload.source     || 'QR Poster').trim().slice(0, 50);
   const consent    = payload.consent === true || payload.consent === 'true' || payload.consent === 'Yes' || payload.consent === 1;
 
   // Validation
@@ -139,7 +164,7 @@ async function handleSubmit(request, env) {
   }
 
   const phone = normalisePhone(rawPhone);
-  if (phone.length < 12) {
+  if (!phone) {
     return jsonResponse({ success: false, error: 'Please enter a valid 10-digit mobile number.' }, 400);
   }
 
@@ -167,10 +192,9 @@ async function handleSubmit(request, env) {
 
 async function handleBiApi(request, env) {
   const url   = new URL(request.url);
-  const token = url.searchParams.get('token') || '';
   const range = url.searchParams.get('range') || 'all';
 
-  if (!verifyToken(token, env)) {
+  if (!verifyToken(request, env)) {
     return jsonResponse({ success: false, error: 'Unauthorized: Invalid admin token' }, 401);
   }
 
@@ -272,10 +296,7 @@ async function handleBiApi(request, env) {
 }
 
 async function handleCsvExport(request, env) {
-  const url   = new URL(request.url);
-  const token = url.searchParams.get('token') || '';
-
-  if (!verifyToken(token, env)) {
+  if (!verifyToken(request, env)) {
     return new Response('Unauthorized: Invalid admin token', {
       status: 401,
       headers: CORS_HEADERS,

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yolkshire | WhatsApp Admin Dashboard</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -453,7 +453,10 @@
     <!-- Contacts Table -->
     <section class="card">
       <div class="controls-row">
-        <h3>Recent Submissions</h3>
+        <div>
+          <h3>Recent Submissions</h3>
+          <p style="font-size: 0.8rem; color: var(--brown-muted); margin-top: 2px;">Showing up to 100 most recent records. Use CSV export for complete data.</p>
+        </div>
         <input type="text" id="filterInput" class="search-input" placeholder="Search by name, branch, phone...">
       </div>
 
@@ -472,7 +475,7 @@
           </thead>
           <tbody id="tableBody">
             <tr>
-              <td colspan="6" style="text-align: center; color: var(--brown-muted);">Loading records...</td>
+              <td colspan="7" style="text-align: center; color: var(--brown-muted);">Loading records...</td>
             </tr>
           </tbody>
         </table>
@@ -538,49 +541,34 @@
       }
 
       function loadData(token, range, isInitialAuth) {
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run
-            .withSuccessHandler(function(res) {
-              if (isInitialAuth) {
-                authBtn.disabled = false;
-                authBtn.textContent = 'Unlock Dashboard';
-              }
-
-              if (res && res.success) {
-                currentToken = token;
-                sessionStorage.setItem('yolk_admin_token', token);
-                authModal.style.display = 'none';
-                mainDashboard.style.display = 'flex';
-                setupDashboard(res);
-              } else {
-                if (isInitialAuth) authError.style.display = 'block';
-              }
-            })
-            .withFailureHandler(function() {
-              if (isInitialAuth) {
-                authBtn.disabled = false;
-                authBtn.textContent = 'Unlock Dashboard';
-                authError.style.display = 'block';
-              }
-            })
-            .adminGetData(token, range);
-        } else {
-          authModal.style.display = 'none';
-          mainDashboard.style.display = 'flex';
-          setupDashboard({
-            success: true,
-            stats: {
-              totalAllTime: 58,
-              filteredTotal: 24,
-              branches: { 'Kothrud': 9, 'Aundh': 6, 'Salunkhe Vihar': 4, 'Bavdhan': 3, 'Wakad': 2 },
-              sources: { 'Table Tent': 16, 'QR Poster': 8 }
-            },
-            contacts: [
-              { timestamp: '2026-09-04 19:10', givenName: 'Rahul', familyName: 'Sharma', phone: '9198****3210', branch: 'Kothrud', source: 'Table Tent', status: 'New' },
-              { timestamp: '2026-09-04 18:45', givenName: 'Priya', familyName: 'Mehta', phone: '9198****6789', branch: 'Aundh', source: 'QR Poster', status: 'New' }
-            ]
+        fetch('/api/stats?range=' + encodeURIComponent(range), {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        })
+          .then(function(res) { return res.json(); })
+          .then(function(res) {
+            if (isInitialAuth) {
+              authBtn.disabled = false;
+              authBtn.textContent = 'Unlock Dashboard';
+            }
+            if (res && res.success) {
+              currentToken = token;
+              sessionStorage.setItem('yolk_admin_token', token);
+              authModal.style.display = 'none';
+              mainDashboard.style.display = 'flex';
+              setupDashboard(res);
+            } else {
+              if (isInitialAuth) authError.style.display = 'block';
+            }
+          })
+          .catch(function() {
+            if (isInitialAuth) {
+              authBtn.disabled = false;
+              authBtn.textContent = 'Unlock Dashboard';
+              authError.style.display = 'block';
+            }
           });
-        }
       }
 
       function setupDashboard(data) {
@@ -610,9 +598,8 @@
           }).join('');
         }
 
-        const baseUrl = window.location.href.split('?')[0];
-        downloadCsvBtn.href = baseUrl + '?page=export&token=' + encodeURIComponent(currentToken);
-        apiUrlSnippet.textContent = baseUrl + '?page=api&token=' + encodeURIComponent(currentToken) + '&range=' + currentRange;
+        downloadCsvBtn.href = '/export?token=' + encodeURIComponent(currentToken);
+        apiUrlSnippet.textContent = window.location.origin + '/api/stats?token=' + encodeURIComponent(currentToken) + '&range=' + currentRange;
 
         cachedContacts = data.contacts || [];
         renderTable(cachedContacts);
