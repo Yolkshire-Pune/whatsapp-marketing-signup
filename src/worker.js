@@ -24,8 +24,11 @@ export default {
     const host = url.hostname.toLowerCase();
     const { pathname } = url;
 
-    // 1. Temporary redirect from old workers.dev domain to insider.yolkshire.com (preserves path & query params)
+    // 1. Redirect from old workers.dev domain to custom domains
     if (host === 'whatsapp.yolkshire.workers.dev' || (host.includes('whatsapp') && host.endsWith('.workers.dev'))) {
+      if (pathname === '/admin' || pathname === '/admin.html') {
+        return Response.redirect(`https://admin.insider.yolkshire.com/${url.search}`, 301);
+      }
       return Response.redirect(`https://insider.yolkshire.com${url.pathname}${url.search}`, 301);
     }
 
@@ -40,9 +43,14 @@ export default {
       url.searchParams.get('portal') === 'admin'
     );
 
-    // If visiting /admin on customer-facing insider.yolkshire.com, redirect to admin.insider.yolkshire.com
+    // If customer visits /admin on customer-facing insider.yolkshire.com, redirect to admin.insider.yolkshire.com
     if (!isAdminHost && (pathname === '/admin' || pathname === '/admin.html') && host.includes('yolkshire.com')) {
       return Response.redirect(`https://admin.insider.yolkshire.com/${url.search}`, 302);
+    }
+
+    // If visiting admin subdomain at root '/' or '/index.html', redirect to '/admin' so the console opens directly
+    if (isAdminHost && (pathname === '/' || pathname === '' || pathname === '/index.html')) {
+      return Response.redirect(`https://admin.insider.yolkshire.com/admin${url.search}`, 302);
     }
 
     // POST /submit — form submission
@@ -62,11 +70,13 @@ export default {
 
     // Static assets serving via Workers Assets binding
     if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
-      // On admin subdomain (admin.insider.yolkshire.com), root '/' or '/admin' serves admin.html
+      // On admin subdomain (admin.insider.yolkshire.com), ensure /admin or / serves admin.html
       if (isAdminHost && (pathname === '/' || pathname === '' || pathname === '/admin')) {
-        const adminUrl = new URL(request.url);
-        adminUrl.pathname = '/admin.html';
-        return env.ASSETS.fetch(new Request(adminUrl.toString(), request));
+        const adminUrl = new URL('/admin.html', request.url);
+        return env.ASSETS.fetch(new Request(adminUrl.toString(), {
+          method: request.method,
+          headers: request.headers,
+        }));
       }
       return env.ASSETS.fetch(request);
     }
@@ -294,8 +304,8 @@ async function handleBiApi(request, env) {
 
     return jsonResponse({
       success: true,
-      brand: 'Yolkshire Insider',
-      metric: 'insider_marketing_optins',
+      brand: 'Yolkshire Insider Eggsclusive',
+      metric: 'eggsclusive_marketing_optins',
       timeRange: range,
       generatedAt: nowIST(),
       totalOptIns: filteredTotal,
@@ -346,7 +356,7 @@ async function handleCsvExport(request, env) {
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="yolkshire_insider_contacts_${today}.csv"`,
+        'Content-Disposition': `attachment; filename="yolkshire_eggsclusive_contacts_${today}.csv"`,
       },
     });
   } catch (err) {

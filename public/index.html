@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yolkshire Insider | What’s Cooking? You’ll Know First!</title>
-  <meta name="description" content="Sign up for Yolkshire Insider. Get festive offers, seasonal specials, milestone news, and secret invites at your branch.">
-  <meta property="og:title" content="Yolkshire Insider | What’s Cooking? You’ll Know First!">
-  <meta property="og:description" content="Sign up for Yolkshire Insider. Get festive offers, seasonal specials, milestone news, and secret invites at your branch.">
+  <script>
+    if (window.location.hostname.startsWith('admin.') && !window.location.pathname.includes('admin')) {
+      window.location.replace('/admin' + window.location.search);
+    }
+  </script>
+  <title>Yolkshire Insider Eggsclusive | What’s Cooking? You’ll Know First!</title>
+  <meta name="description" content="Sign up for Yolkshire Insider Eggsclusive WhatsApp updates. Get festive offers, seasonal specials, and event invites at your branch.">
+  <meta property="og:title" content="Yolkshire Insider Eggsclusive | What’s Cooking? You’ll Know First!">
+  <meta property="og:description" content="Sign up for Yolkshire Insider Eggsclusive WhatsApp updates. Get festive offers, seasonal specials, and event invites at your branch.">
   <meta property="og:type" content="website">
   
   <!-- Fonts: Poppins (Primary Brand Font) -->
@@ -112,7 +117,7 @@
 
     .hero-title .brand-name {
       color: var(--yolk-secondary);
-      font-size: 1.55rem;
+      font-size: clamp(1.2rem, 4.5vw, 1.45rem);
       display: block;
       letter-spacing: 0.04em;
     }
@@ -517,8 +522,8 @@
         <span class="highlight-badge">YOU'LL KNOW FIRST!</span>
       </div>
       <h1 class="hero-title">
-        <span class="brand-name">YOLKSHIRE</span>
-        <span class="eggs-accent">IN</span><span class="clusive-accent">SIDER</span>
+        <span class="brand-name">YOLKSHIRE INSIDER</span>
+        <span class="eggs-accent">EGGS</span><span class="clusive-accent">CLUSIVE</span>
       </h1>
       <p class="hero-subtitle">
         Be the first to know about <strong>seasonal specials</strong>, <strong>festive offers</strong>, and <strong>events</strong>.
@@ -634,7 +639,7 @@
         <!-- CTA Button -->
         <button type="submit" id="submitBtn" class="btn-submit">
           <span class="spinner" id="spinner"></span>
-          <span id="btnText">GET INSIDER ACCESS 🍳</span>
+          <span id="btnText">GET EGGSCLUSIVE ACCESS 🍳</span>
         </button>
 
         <!-- Trust Guarantee Bar from Pamphlet -->
@@ -657,9 +662,9 @@
       <!-- Success Screen -->
       <div id="successView" class="success-container">
         <div class="success-icon-badge">🍳</div>
-        <h2 class="success-title">You're an Insider!</h2>
+        <h2 class="success-title">You're Eggsclusive!</h2>
         <p class="success-copy">
-          Welcome to the inner circle!<br>
+          Welcome to the Yolkshire Insider circle!<br>
           You’ll now be the first to know about seasonal specials, festive surprises, event invites, and mouth-watering offers at your branch.
         </p>
         <div style="margin-bottom: 22px;">
