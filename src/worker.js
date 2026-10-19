@@ -21,11 +21,28 @@ const CORS_HEADERS = {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const host = url.hostname.toLowerCase();
     const { pathname } = url;
+
+    // 1. Temporary redirect from old workers.dev domain to insider.yolkshire.com (preserves path & query params)
+    if (host === 'whatsapp.yolkshire.workers.dev' || (host.includes('whatsapp') && host.endsWith('.workers.dev'))) {
+      return Response.redirect(`https://insider.yolkshire.com${url.pathname}${url.search}`, 301);
+    }
 
     // CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    // 2. Identify portal front door: admin.insider.yolkshire.com vs insider.yolkshire.com
+    const isAdminHost = host.startsWith('admin.') || (
+      (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.workers.dev')) &&
+      url.searchParams.get('portal') === 'admin'
+    );
+
+    // If visiting /admin on customer-facing insider.yolkshire.com, redirect to admin.insider.yolkshire.com
+    if (!isAdminHost && (pathname === '/admin' || pathname === '/admin.html') && host.includes('yolkshire.com')) {
+      return Response.redirect(`https://admin.insider.yolkshire.com/${url.search}`, 302);
     }
 
     // POST /submit — form submission
@@ -43,8 +60,14 @@ export default {
       return handleCsvExport(request, env);
     }
 
-    // All other requests fall through to Workers Assets if bound
+    // Static assets serving via Workers Assets binding
     if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {
+      // On admin subdomain (admin.insider.yolkshire.com), root '/' or '/admin' serves admin.html
+      if (isAdminHost && (pathname === '/' || pathname === '' || pathname === '/admin')) {
+        const adminUrl = new URL(request.url);
+        adminUrl.pathname = '/admin.html';
+        return env.ASSETS.fetch(new Request(adminUrl.toString(), request));
+      }
       return env.ASSETS.fetch(request);
     }
 
@@ -271,8 +294,8 @@ async function handleBiApi(request, env) {
 
     return jsonResponse({
       success: true,
-      brand: 'Yolkshire',
-      metric: 'whatsapp_marketing_optins',
+      brand: 'Yolkshire Insider',
+      metric: 'insider_marketing_optins',
       timeRange: range,
       generatedAt: nowIST(),
       totalOptIns: filteredTotal,
@@ -323,7 +346,7 @@ async function handleCsvExport(request, env) {
       headers: {
         ...CORS_HEADERS,
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="yolkshire_waba_contacts_${today}.csv"`,
+        'Content-Disposition': `attachment; filename="yolkshire_insider_contacts_${today}.csv"`,
       },
     });
   } catch (err) {
